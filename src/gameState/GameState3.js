@@ -33,8 +33,11 @@ export class GameState3 {
 		this.locPersonTotalLocations = [];
 		this.initialiseState()
 		this.addRecords()
+		this.possibleSolutions = []
 		this.solutions = []
+		this.numberOfSolutionsExceeded = false;
 		this.solve(JSON.parse(JSON.stringify(this.state))); // Deep copy to avoid modifying the original state
+		this.checkSolutions();
 	}
 
 	initialiseState() {
@@ -55,11 +58,19 @@ export class GameState3 {
 	addRecords() {
 		this.records.forEach(record => {
 			if (record instanceof LocationTimestampRecord) {
-				this.state[record.iPerson][record.iTime] = record.iLocation;
-				this.locTimeTotalPeople[record.iLocation][record.iTime] = record.total;
+				if (record.iPerson !== -1) {
+					this.state[record.iPerson][record.iTime] = record.iLocation;
+				}
+				if (record.total !== null) {
+					this.locTimeTotalPeople[record.iLocation][record.iTime] = record.total;
+				}
 			} else if (record instanceof LocationPersonRecord) {
-				this.state[record.iPerson][record.iTime] = record.iLocation;
-				this.locPersonTotalLocations[record.iLocation][record.iPerson] = record.total;
+				if (record.iTime !== -1) {
+					this.state[record.iPerson][record.iTime] = record.iLocation;
+				}
+				if (record.total !== null) {
+					this.locPersonTotalLocations[record.iLocation][record.iPerson] = record.total;
+				}
 			}
 		});
 	}
@@ -69,6 +80,7 @@ export class GameState3 {
 		// Check the previous and next timestamp
 		const previousLocation = state[iPerson][iTime-1]
 		if (previousLocation != null && previousLocation !== -1 && !this.map[this.locations[previousLocation]].includes(this.locations[iLocation])) {
+			// TODO: Show errors, but only when showError is true
 			return false; // Invalid move, not adjacent
 		}
 		const nextLocation = state[iPerson][iTime+1];
@@ -108,15 +120,60 @@ export class GameState3 {
 					for (let iLocation = 0; iLocation < this.locations.length; iLocation++) {
 						if (this.isValid(state, iPerson, iTime, iLocation)) {
 							state[iPerson][iTime] = iLocation;
-							if (this.solve(state)) return true;
-							state[iPerson][iTime] = 0;
+							if (this.solve(state)) this.possibleSolutions.push(JSON.parse(JSON.stringify(state)))
+							if (this.possibleSolutions.length > 10) {
+								this.numberOfSolutionsExceeded = true;
+								return true;
+							}
+							state[iPerson][iTime] = -1;
 						}
 					}
 					return false; // No valid number found
 				}
 			}
 		}
-		this.solutions.push(state)
 		return true; // All cells filled correctly
+	}
+
+
+	isCompleteAndValidState(state) {
+		// For every location at every timestamp, check if the number of people matches the total required
+		for (let iLocation = 0; iLocation < this.locations.length; iLocation++) {
+			for (let iTime = 0; iTime < this.timestamps.length; iTime++) {
+				const peopleInLocationAtTime = [];
+				for (let iPerson = 0; iPerson < this.people.length; iPerson++) {
+					if (state[iPerson][iTime] === iLocation) {
+						peopleInLocationAtTime.push(iPerson);
+					}
+				}
+				if (this.locTimeTotalPeople[iLocation][iTime] !== -1 && peopleInLocationAtTime.length !== this.locTimeTotalPeople[iLocation][iTime]) {
+					return false; // Not enough or too many people in this location at this timestamp
+				}
+			}
+		}
+
+		// For every person, check if the number of times they have been in each location matches the total required
+		for (let iPerson = 0; iPerson < this.people.length; iPerson++) {
+			for (let iLocation = 0; iLocation < this.locations.length; iLocation++) {
+				const totalTimesInLocation = [];
+				for (let iTime = 0; iTime < this.timestamps.length; iTime++) {
+					if (state[iPerson][iTime] === iLocation) {
+						totalTimesInLocation.push(iTime);
+					}
+				}
+				if (this.locPersonTotalLocations[iLocation][iPerson] !== -1 && totalTimesInLocation.length !== this.locPersonTotalLocations[iLocation][iPerson]) {
+					return false; // This person has not been in this location enough times
+				}
+			}
+		}
+		return true; // All cells are filled
+	}
+
+	checkSolutions() {
+		for (const solution of this.possibleSolutions) {
+			if (this.isCompleteAndValidState(solution)) {
+				this.solutions.push(solution)
+			}
+		}
 	}
 }
