@@ -1,6 +1,6 @@
-import { LOCATIONS } from "../util/locations.js";
-import { TIMESTAMPS } from "../util/timestamps.js";
-import { PEOPLE } from "../util/people.js";
+import { LOCATIONS } from "../constants/locations.js";
+import { TIMESTAMPS } from "../constants/timestamps.js";
+import { PEOPLE } from "../constants/people.js";
 
 export class LocationTimestampRecord {
 	constructor(location, timestamp, totalPeople, person) {
@@ -20,7 +20,7 @@ export class LocationPersonRecord {
 	}
 }
 
-export class GameState3 {
+export class KronologicSolver {
 	constructor(locations, map, people, timestamps, records) {
 		this.locations = locations;
 		this.map = map;
@@ -28,18 +28,20 @@ export class GameState3 {
 		this.timestamps = timestamps;
 		this.records = records;
 
+		// Initialize the current state of known information
 		this.state = []
 		this.locTimeTotalPeople = []
 		this.locPersonTotalLocations = [];
 		this.initialiseState()
 		this.addRecords()
-		this.possibleSolutions = []
+
+		// Solve the puzzle
 		this.solutions = []
 		this.numberOfSolutionsExceeded = false;
 		this.solve(JSON.parse(JSON.stringify(this.state))); // Deep copy to avoid modifying the original state
-		this.checkSolutions();
 	}
 
+	// Initialize the state with known information
 	initialiseState() {
 		this.initialiseGridWithZeros(this.state, this.people, this.timestamps)
 		this.initialiseGridWithZeros(this.locTimeTotalPeople, this.locations, this.timestamps);
@@ -113,28 +115,16 @@ export class GameState3 {
 		return true;
 	}
 
-	solve(state) {
+	isCompleteState(state) {
 		for (let iPerson = 0; iPerson < this.people.length; iPerson++) {
 			for (let iTime = 0; iTime < this.timestamps.length; iTime++) {
 				if (state[iPerson][iTime] === -1) {
-					for (let iLocation = 0; iLocation < this.locations.length; iLocation++) {
-						if (this.isValid(state, iPerson, iTime, iLocation)) {
-							state[iPerson][iTime] = iLocation;
-							if (this.solve(state)) this.possibleSolutions.push(JSON.parse(JSON.stringify(state)))
-							if (this.possibleSolutions.length > 10) {
-								this.numberOfSolutionsExceeded = true;
-								return true;
-							}
-							state[iPerson][iTime] = -1;
-						}
-					}
-					return false; // No valid number found
+					return false; // At least one cell is not filled
 				}
 			}
 		}
-		return true; // All cells filled correctly
+		return true
 	}
-
 
 	isCompleteAndValidState(state) {
 		// For every location at every timestamp, check if the number of people matches the total required
@@ -169,10 +159,31 @@ export class GameState3 {
 		return true; // All cells are filled
 	}
 
-	checkSolutions() {
-		for (const solution of this.possibleSolutions) {
-			if (this.isCompleteAndValidState(solution)) {
-				this.solutions.push(solution)
+	solve(state) {
+		// Base case: if all cells are filled, check if the state is valid and add to solutions
+		if (this.isCompleteState(state) && this.isCompleteAndValidState(state)) {
+			this.solutions.push(JSON.parse(JSON.stringify(state)));
+			if (this.solutions.length > 10) {
+				this.numberOfSolutionsExceeded = true;
+			}
+			return
+		}
+
+		for (let iPerson = 0; iPerson < this.people.length; iPerson++) {
+			for (let iTime = 0; iTime < this.timestamps.length; iTime++) {
+				if (state[iPerson][iTime] === -1) {
+					for (let iLocation = 0; iLocation < this.locations.length; iLocation++) {
+						if (this.isValid(state, iPerson, iTime, iLocation)) {
+							state[iPerson][iTime] = iLocation;
+							this.solve(state);
+							if (this.numberOfSolutionsExceeded) {
+								return
+							}
+							state[iPerson][iTime] = -1; // Backtrack
+						}
+					}
+					return
+				}
 			}
 		}
 	}

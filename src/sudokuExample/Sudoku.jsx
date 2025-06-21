@@ -1,4 +1,4 @@
-import { solveSudoku } from "./util/sudokuSolver.js";
+import { solveSudoku } from "./sudokuSolver.js";
 
 export const Sudoku = () => {
 	const board = [

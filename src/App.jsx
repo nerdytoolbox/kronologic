@@ -1,13 +1,12 @@
 import './App.css'
-import { DANCE_HALL, FOYER, GALLERY, LOCATIONS, MAP, MUSIC_HALL, STAGE, STAIRCASE } from "./util/locations.js";
-import { A, B, C, D, J, H, PEOPLE } from "./util/people.js";
-import { TIMESTAMPS } from "./util/timestamps.js";
-import { GameState3, LocationTimestampRecord, LocationPersonRecord } from "./gameState/GameState3.js";
-import { realSolution } from "./gameState/solution.js";
+import { DANCE_HALL, FOYER, GALLERY, LOCATIONS, MAP, MUSIC_HALL, STAGE, STAIRCASE } from "./constants/locations.js";
+import { A, B, C, D, J, H, PEOPLE } from "./constants/people.js";
+import { TIMESTAMPS } from "./constants/timestamps.js";
+import { KronologicSolver, LocationTimestampRecord, LocationPersonRecord } from "./util/KronologicSolver.js";
 
 function App() {
 
-  const GameState = new GameState3(LOCATIONS, MAP, PEOPLE, TIMESTAMPS, [
+  const GameState = new KronologicSolver(LOCATIONS, MAP, PEOPLE, TIMESTAMPS, [
     // Starting info
     new LocationTimestampRecord(MUSIC_HALL, 1, null, A),
     new LocationTimestampRecord(MUSIC_HALL, 1, null, B),
@@ -36,30 +35,21 @@ function App() {
     new LocationPersonRecord(STAGE, A, 2, 2),
     new LocationPersonRecord(MUSIC_HALL, J, 0, null),
     new LocationPersonRecord(DANCE_HALL, J, 1, 6),
-    new LocationTimestampRecord(DANCE_HALL, 3, 1, D),
-    new LocationTimestampRecord(STAIRCASE, 5, 2, H),
   ]);
 
   const locations = GameState.locations
   const people = GameState.people
   const timestamps = GameState.timestamps
-  const possibleSolutions = GameState.possibleSolutions
+
+  const state = GameState.state
   const solutions = GameState.solutions
   const numberOfSolutionsExceeded = GameState.numberOfSolutionsExceeded
 
-  const state = GameState.state
-  const solution = solutions.length === 0 ? null : solutions[0]
-
-  if (numberOfSolutionsExceeded) {
-    console.log(numberOfSolutionsExceeded)
-  } else {
-    console.log(solutions.length)
-    console.log(solutions.map(sol => JSON.stringify(sol)).includes(JSON.stringify(realSolution)));
-  }
+  const solution = solutions.length > 0 ? solutions[0] : null;
 
   return (
     <div>
-      {(numberOfSolutionsExceeded || (possibleSolutions.length > 1 && solutions.length === 0)) && <div>There is not yet enough data to deduct the solution.</div>}
+      {numberOfSolutionsExceeded && <div>There is not yet enough data to deduct the solution.</div>}
       {!numberOfSolutionsExceeded && solutions.length > 1 && <div>There is no unique solution, this is the first one found</div>}
       <table>
         <tbody>

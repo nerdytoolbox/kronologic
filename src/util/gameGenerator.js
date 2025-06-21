@@ -1,6 +1,6 @@
-import { LOCATIONS, MAP } from "./locations.js";
-import { PEOPLE } from "./people.js";
-import { TIMESTAMPS } from "./timestamps.js";
+import { LOCATIONS, MAP } from "../constants/locations.js";
+import { PEOPLE } from "../constants/people.js";
+import { TIMESTAMPS } from "../constants/timestamps.js";
 
 const getRandomElement = (array) => {
 	return array[Math.floor(Math.random() * array.length)];
