@@ -1,77 +1,54 @@
 import './App.css'
-import { DANCE_HALL, FOYER, GALLERY, LOCATIONS, MAP, MUSIC_HALL, STAGE, STAIRCASE } from "./constants/locations.js";
+import { DANCE_HALL, FOYER, GALLERY, MUSIC_HALL, STAGE, STAIRCASE, LOCATIONS, MAP } from "./constants/locations.js";
 import { A, B, C, D, J, H, PEOPLE } from "./constants/people.js";
 import { TIMESTAMPS } from "./constants/timestamps.js";
-import { KronologicSolver, LocationTimestampRecord, LocationPersonRecord } from "./util/KronologicSolver.js";
+import { useKronologicSolver, LocationTimestampRecord, LocationPersonRecord } from "./util/useKronologicSolver.jsx";
+import { useEffect } from "react";
 
 function App() {
+  const { addRecord, state, solutions, numberOfSolutionsExceeded } = useKronologicSolver(LOCATIONS, MAP, PEOPLE, TIMESTAMPS)
 
-  const GameState = new KronologicSolver(LOCATIONS, MAP, PEOPLE, TIMESTAMPS, [
-    // Starting info
-    new LocationTimestampRecord(MUSIC_HALL, 1, null, A),
-    new LocationTimestampRecord(MUSIC_HALL, 1, null, B),
-    new LocationTimestampRecord(FOYER, 1, null, C),
-    new LocationTimestampRecord(GALLERY, 1, null, D),
-    new LocationTimestampRecord(FOYER, 1, null, J),
-    new LocationTimestampRecord(DANCE_HALL, 1, null, H),
+  useEffect(() => {
+    addRecord(new LocationTimestampRecord(MUSIC_HALL, 1, null, A))
+    addRecord(new LocationTimestampRecord(MUSIC_HALL, 1, null, B))
+    addRecord(new LocationTimestampRecord(FOYER, 1, null, C))
+    addRecord(new LocationTimestampRecord(GALLERY, 1, null, D))
+    addRecord(new LocationTimestampRecord(FOYER, 1, null, J))
+    addRecord(new LocationTimestampRecord(DANCE_HALL, 1, null, H))
+  }, [])
 
-    new LocationTimestampRecord(GALLERY, 2, 1, J),
-    new LocationTimestampRecord(DANCE_HALL, 5, 2, A),
-    new LocationPersonRecord(STAIRCASE, C, 2, 2),
-    new LocationTimestampRecord(GALLERY, 6, 2, C),
-    new LocationPersonRecord(DANCE_HALL, B, 0, null),
-    new LocationTimestampRecord(GALLERY, 3, 1, B),
-    new LocationTimestampRecord(GALLERY, 4, 2, H),
-    new LocationTimestampRecord(GALLERY, 5, 0, null),
-    new LocationTimestampRecord(STAGE, 2, 3, D),
-    new LocationTimestampRecord(STAGE, 3, 1, H),
-    new LocationTimestampRecord(STAGE, 4, 1, A),
-    new LocationTimestampRecord(STAGE, 5, 1, J),
-    new LocationTimestampRecord(STAGE, 6, 1, D),
-    new LocationTimestampRecord(DANCE_HALL, 4, 0, null),
-    new LocationTimestampRecord(FOYER, 4, 1, B),
-    new LocationTimestampRecord(MUSIC_HALL, 4, 1, D),
-    new LocationTimestampRecord(STAIRCASE, 4, 1, C),
-    new LocationPersonRecord(STAGE, A, 2, 2),
-    new LocationPersonRecord(MUSIC_HALL, J, 0, null),
-    new LocationPersonRecord(DANCE_HALL, J, 1, 6),
-  ]);
+  const buttonClick = () => {
+    addRecord(new LocationTimestampRecord(GALLERY, 5, 1, A))
+  }
 
-  const locations = GameState.locations
-  const people = GameState.people
-  const timestamps = GameState.timestamps
-
-  const state = GameState.state
-  const solutions = GameState.solutions
-  const numberOfSolutionsExceeded = GameState.numberOfSolutionsExceeded
-
-  const solution = solutions.length > 0 ? solutions[0] : null;
+  const solution = solutions.length > 0 ? solutions[0] : null
 
   return (
     <div>
+      <button onClick={buttonClick}>Add</button>
       {numberOfSolutionsExceeded && <div>There is not yet enough data to deduct the solution.</div>}
       {!numberOfSolutionsExceeded && solutions.length > 1 && <div>There is no unique solution, this is the first one found</div>}
       <table>
         <tbody>
         <tr>
           <td></td>
-          <td>{timestamps[0]}</td>
-          <td>{timestamps[1]}</td>
-          <td>{timestamps[2]}</td>
-          <td>{timestamps[3]}</td>
-          <td>{timestamps[4]}</td>
-          <td>{timestamps[5]}</td>
+          <td>{TIMESTAMPS[0]}</td>
+          <td>{TIMESTAMPS[1]}</td>
+          <td>{TIMESTAMPS[2]}</td>
+          <td>{TIMESTAMPS[3]}</td>
+          <td>{TIMESTAMPS[4]}</td>
+          <td>{TIMESTAMPS[5]}</td>
         </tr>
-        {people.map((p, indexP) => {
+        {PEOPLE.map((p, indexP) => {
           const rowData = []
-          timestamps.map((t, indexT) => {
+          TIMESTAMPS.map((t, indexT) => {
             let loc
             if (!numberOfSolutionsExceeded && solution !== null) {
               loc = solution[indexP][indexT]
-            } else if (state[indexP][indexT] !== -1) {
+            } else if (state.length > 0 && state[indexP][indexT] !== -1) {
               loc = state[indexP][indexT]
             }
-            const known = state[indexP][indexT] !== -1
+            const known = state.length > 0 ? state[indexP][indexT] !== -1 : null
             rowData.push({ loc, known })
           })
 
@@ -79,7 +56,7 @@ function App() {
             <tr key={indexP}>
               <td>{p}</td>
               {rowData.map((r, indexR) => {
-                return <td key={indexR}  style={{ height: "5rem", width: "9rem", border: "1px solid black", padding: "0.5rem", color: r.known ? "red" : "white" }}>{locations[r.loc]}</td>
+                return <td key={indexR}  style={{ height: "5rem", width: "9rem", border: "1px solid black", padding: "0.5rem", color: r.known ? "red" : "white" }}>{LOCATIONS[r.loc]}</td>
               })}
             </tr>
           )

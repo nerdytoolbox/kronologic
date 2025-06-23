@@ -1,24 +1,4 @@
-import { LOCATIONS } from "../constants/locations.js";
-import { TIMESTAMPS } from "../constants/timestamps.js";
-import { PEOPLE } from "../constants/people.js";
-
-export class LocationTimestampRecord {
-	constructor(location, timestamp, totalPeople, person) {
-		this.iLocation = LOCATIONS.findIndex(l => l === location);
-		this.iTime = TIMESTAMPS.findIndex(t => t === timestamp);
-		this.iPerson = PEOPLE.findIndex(p => p === person);
-		this.total = totalPeople;
-	}
-}
-
-export class LocationPersonRecord {
-	constructor(location, person, totalTimes, timestamp) {
-		this.iLocation = LOCATIONS.findIndex(l => l === location);
-		this.iTime = TIMESTAMPS.findIndex(t => t === timestamp);
-		this.iPerson = PEOPLE.findIndex(p => p === person);
-		this.total = totalTimes;
-	}
-}
+import { LocationPersonRecord, LocationTimestampRecord } from "./useKronologicSolver.jsx";
 
 export class KronologicSolver {
 	constructor(locations, map, people, timestamps, records) {
@@ -27,6 +7,7 @@ export class KronologicSolver {
 		this.people = people;
 		this.timestamps = timestamps;
 		this.records = records;
+		this.showErrors = false;
 
 		// Initialize the current state of known information
 		this.state = []
@@ -59,19 +40,20 @@ export class KronologicSolver {
 
 	addRecords() {
 		this.records.forEach(record => {
+			const iLocation = this.locations.findIndex(l => l === record.location);
+			const iPerson = this.people.findIndex(p => p === record.person);
+			const iTime = this.timestamps.findIndex(t => t === record.timestamp);
+			if (iPerson !== -1 && iTime !== -1 && iLocation !== -1) {
+				this.state[iPerson][iTime] = iLocation;
+			}
+
 			if (record instanceof LocationTimestampRecord) {
-				if (record.iPerson !== -1) {
-					this.state[record.iPerson][record.iTime] = record.iLocation;
-				}
-				if (record.total !== null) {
-					this.locTimeTotalPeople[record.iLocation][record.iTime] = record.total;
+				if (record.total !== null && iLocation !== -1 && iTime !== -1) {
+					this.locTimeTotalPeople[iLocation][iTime] = record.total;
 				}
 			} else if (record instanceof LocationPersonRecord) {
-				if (record.iTime !== -1) {
-					this.state[record.iPerson][record.iTime] = record.iLocation;
-				}
-				if (record.total !== null) {
-					this.locPersonTotalLocations[record.iLocation][record.iPerson] = record.total;
+				if (record.total !== null && iLocation !== -1 && iPerson !== -1) {
+					this.locPersonTotalLocations[iLocation][iPerson] = record.total;
 				}
 			}
 		});
@@ -82,12 +64,17 @@ export class KronologicSolver {
 		// Check the previous and next timestamp
 		const previousLocation = state[iPerson][iTime-1]
 		if (previousLocation != null && previousLocation !== -1 && !this.map[this.locations[previousLocation]].includes(this.locations[iLocation])) {
-			// TODO: Show errors, but only when showError is true
-			return false; // Invalid move, not adjacent
+			if (this.showErrors) {
+				console.warn("Invalid move: not adjacent to previous location")
+			}
+			return false;
 		}
 		const nextLocation = state[iPerson][iTime+1];
 		if (nextLocation != null && nextLocation !== -1 && !this.map[this.locations[iLocation]].includes(this.locations[nextLocation])) {
-			return false; // Invalid move, not adjacent
+			if (this.showErrors) {
+				console.warn("Invalid move: not adjacent to next location")
+			}
+			return false;
 		}
 
 		// Check the total of people in the location at this timestamp
@@ -98,7 +85,10 @@ export class KronologicSolver {
 			}
 		}
 		if (this.locTimeTotalPeople[iLocation][iTime] !== -1 && peopleInLocationAtTime.length >= this.locTimeTotalPeople[iLocation][iTime]) {
-			return false; // There are already enough people in this location at this timestamp
+			if (this.showErrors) {
+				console.warn("Invalid move: location already has enough people at this timestamp")
+			}
+			return false;
 		}
 
 		// Check the total times a person has been in this location
@@ -109,7 +99,10 @@ export class KronologicSolver {
 			}
 		}
 		if (this.locPersonTotalLocations[iLocation][iPerson] !== -1 && totalTimesInLocation.length >= this.locPersonTotalLocations[iLocation][iPerson]) {
-			return false; // This person has already been in this location enough times
+			if (this.showErrors) {
+				console.warn("Invalid move: person has already been in this location enough times")
+			}
+			return false;
 		}
 
 		return true;
@@ -160,10 +153,9 @@ export class KronologicSolver {
 	}
 
 	solve(state) {
-		// Base case: if all cells are filled, check if the state is valid and add to solutions
 		if (this.isCompleteState(state) && this.isCompleteAndValidState(state)) {
 			this.solutions.push(JSON.parse(JSON.stringify(state)));
-			if (this.solutions.length > 10) {
+			if (this.solutions.length > 20) {
 				this.numberOfSolutionsExceeded = true;
 			}
 			return
