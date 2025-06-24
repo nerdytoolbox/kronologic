@@ -1,4 +1,3 @@
-import './App.css'
 import { DANCE_HALL, FOYER, GALLERY, MUSIC_HALL, STAGE, STAIRCASE, LOCATIONS, MAP } from "./constants/locations.js";
 import { A, B, C, D, J, H, PEOPLE } from "./constants/people.js";
 import { TIMESTAMPS } from "./constants/timestamps.js";
@@ -17,52 +16,57 @@ function App() {
     addRecord(new LocationTimestampRecord(DANCE_HALL, 1, null, H))
   }, [])
 
-  const buttonClick = () => {
-    addRecord(new LocationTimestampRecord(GALLERY, 5, 1, A))
-  }
-
   const solution = solutions.length > 0 ? solutions[0] : null
 
   return (
     <div>
-      <button onClick={buttonClick}>Add</button>
-      {numberOfSolutionsExceeded && <div>There is not yet enough data to deduct the solution.</div>}
-      {!numberOfSolutionsExceeded && solutions.length > 1 && <div>There is no unique solution, this is the first one found</div>}
-      <table>
-        <tbody>
-        <tr>
-          <td></td>
-          <td>{TIMESTAMPS[0]}</td>
-          <td>{TIMESTAMPS[1]}</td>
-          <td>{TIMESTAMPS[2]}</td>
-          <td>{TIMESTAMPS[3]}</td>
-          <td>{TIMESTAMPS[4]}</td>
-          <td>{TIMESTAMPS[5]}</td>
-        </tr>
-        {PEOPLE.map((p, indexP) => {
-          const rowData = []
-          TIMESTAMPS.map((t, indexT) => {
-            let loc
-            if (!numberOfSolutionsExceeded && solution !== null) {
-              loc = solution[indexP][indexT]
-            } else if (state.length > 0 && state[indexP][indexT] !== -1) {
-              loc = state[indexP][indexT]
-            }
-            const known = state.length > 0 ? state[indexP][indexT] !== -1 : null
-            rowData.push({ loc, known })
-          })
+      <div className="align-horizontal">
+        <div>
+          Location
+        </div>
+        <div>
+          Person or Timestamp
+        </div>
+      </div>
+      <div className="align-center">
+        {numberOfSolutionsExceeded && <div>There is not yet enough data to deduct the solution.</div>}
+        {!numberOfSolutionsExceeded && solutions.length > 1 && <div>There is no unique solution, this is the first one found</div>}
+        <table>
+          <tbody>
+          <tr>
+            <td></td>
+            <td>{TIMESTAMPS[0]}</td>
+            <td>{TIMESTAMPS[1]}</td>
+            <td>{TIMESTAMPS[2]}</td>
+            <td>{TIMESTAMPS[3]}</td>
+            <td>{TIMESTAMPS[4]}</td>
+            <td>{TIMESTAMPS[5]}</td>
+          </tr>
+          {PEOPLE.map((p, indexP) => {
+            const rowData = []
+            TIMESTAMPS.map((t, indexT) => {
+              let loc
+              if (!numberOfSolutionsExceeded && solution !== null) {
+                loc = solution[indexP][indexT]
+              } else if (state.length > 0 && state[indexP][indexT] !== -1) {
+                loc = state[indexP][indexT]
+              }
+              const known = state.length > 0 ? state[indexP][indexT] !== -1 : null
+              rowData.push({ loc, known })
+            })
 
-          return (
-            <tr key={indexP}>
-              <td>{p}</td>
-              {rowData.map((r, indexR) => {
-                return <td key={indexR}  style={{ height: "5rem", width: "9rem", border: "1px solid black", padding: "0.5rem", color: r.known ? "red" : "white" }}>{LOCATIONS[r.loc]}</td>
-              })}
-            </tr>
-          )
-        })}
-        </tbody>
-      </table>
+            return (
+              <tr key={indexP}>
+                <td>{p}</td>
+                {rowData.map((r, indexR) => {
+                  return <td key={indexR}  style={{ height: "3rem", width: "9rem", border: "1px solid black", padding: "0.5rem", color: r.known ? "red" : "white" }}>{LOCATIONS[r.loc]}</td>
+                })}
+              </tr>
+            )
+          })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
