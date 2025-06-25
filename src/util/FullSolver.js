@@ -1,6 +1,6 @@
 import { KronologicSolver } from "./KronologicSolver.js";
 
-class FullSolver extends KronologicSolver {
+export class FullSolver extends KronologicSolver {
 	constructor(locations, map, people, timestamps, records) {
 		super(locations, map, people, timestamps, records);
 		this.solve(JSON.parse(JSON.stringify(this.state))); // Deep copy to avoid modifying the original state

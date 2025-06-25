@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { KronologicSolver } from "./KronologicSolver";
+import { FullSolver } from "./FullSolver.js";
 
 export class LocationTimestampRecord {
 	constructor(location, timestamp, totalPeople, person) {
@@ -30,7 +31,7 @@ export function useKronologicSolver(locations, map, people, timestamps) {
 	}, []);
 
 	useEffect(() => {
-		const solver = new KronologicSolver(locations, map, people, timestamps, records);
+		const solver = new FullSolver(locations, map, people, timestamps, records);
 		setState(solver.state)
 		setSolutions(solver.solutions);
 		setNumberOfSolutionsExceeded(solver.numberOfSolutionsExceeded);
