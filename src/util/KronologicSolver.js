@@ -106,4 +106,44 @@ export class KronologicSolver {
 
 		return true;
 	}
+
+	totalsConform(state) {
+		// If for a timestamp, each person whereabouts is known, check if the number of people in a location matches the total required
+		for (let iTime = 0; iTime < this.timestamps.length; iTime++) {
+			const peopleAtTime = []
+			for (let iPerson = 0; iPerson < this.people.length; iPerson++) {
+				if (state[iPerson][iTime] !== -1) {
+					peopleAtTime.push(state[iPerson][iTime]);
+				}
+			}
+			if (peopleAtTime.length === this.people.length) {
+				for (let iLocation = 0; iLocation < this.locations.length; iLocation++) {
+					const totalPeopleInLocation = peopleAtTime.filter(loc => loc === iLocation).length;
+					if (this.locTimeTotalPeople[iLocation][iTime] !== -1 && totalPeopleInLocation !== this.locTimeTotalPeople[iLocation][iTime]) {
+						return false; // Not enough or too many people in this location at this timestamp
+					}
+				}
+			}
+		}
+
+		// If for a person, the whole path is known, check if the number of times they have been in each location matches the total required
+		for (let iPerson = 0; iPerson < this.people.length; iPerson++) {
+			const pathOfPerson = []
+			for (let iTime = 0; iTime < this.timestamps.length; iTime++) {
+				if (state[iPerson][iTime] !== -1) {
+					pathOfPerson.push(state[iPerson][iTime]);
+				}
+			}
+			if (pathOfPerson.length === this.timestamps.length) {
+				for (let iLocation = 0; iLocation < this.locations.length; iLocation++) {
+					const timesAtLocation = pathOfPerson.filter(loc => loc === iLocation).length;
+					if (this.locPersonTotalLocations[iLocation][iPerson] !== -1 && timesAtLocation !== this.locPersonTotalLocations[iLocation][iPerson]) {
+						return false; // Not enough or too many people in this location at this timestamp
+					}
+				}
+			}
+		}
+
+		return true; // All totals conform to the requirements
+	}
 }
